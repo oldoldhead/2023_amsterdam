@@ -1,10 +1,12 @@
-final int STAR_LED_NUM = 600;
-final int MAX_STAR_NUM = 10;
-final float SCALE = 0.5;
-final int VIRTUAL_LED_SKIP_DIST = 50;
+final int STAR_LED_NUM = 1000;
+final int MAX_STAR_NUM = 8;
+final float SCALE = 0.45;
+final int VIRTUAL_LED_SKIP_DIST = 100;
 final int RIPPLE_NUM = 7;
 final int BOUNCE_LED_NUM = 120;
-final int VIRTUAL_LED_TOTAL_LEN = STAR_LED_NUM + (BOUNCE_LED_NUM+VIRTUAL_LED_SKIP_DIST)*RIPPLE_NUM ;
+final int VIRTUAL_LED_TOTAL_LEN = STAR_LED_NUM + (BOUNCE_LED_NUM+VIRTUAL_LED_SKIP_DIST)*RIPPLE_NUM +400 ;
+
+boolean SHOW_PATH = false;
 
 color[] virtualLED = new color[VIRTUAL_LED_TOTAL_LEN];
 color[] shootingStarLED = new color[STAR_LED_NUM];
@@ -18,10 +20,10 @@ int[] bouncePath = new int[MAX_STAR_NUM];
 int curMillis;
 int[][] BOUNCE_TABLE = {
   {11},
-  {1,12},
-  {1,13},
-  {1,15},
   {1,2,13},
+  {1,3,14},
+  {1,3,15},
+  {1,2,3,14},
   {1,3,14},
   {1,3,15},
   {1,4,16},

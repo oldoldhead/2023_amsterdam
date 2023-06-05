@@ -4,36 +4,37 @@ float LED_DIST = 1*SCALE;
 
 
 
-int[] starRanking = {3,3,3,3,2,2,2,1,1,0};
-int[][] starRanInterval={//min,max,sec
-  {30,180},
-  {10,60},
-  {5,30},
-  {2,10}
+int[] starRanking = {3,3,3,3,2,2,1,0};
+float[][] starRanInterval={//min,max,sec
+  {1,1},//{1,2},//{30,60},
+  {500,500},//{1,10},
+  {500,500},//{1,10},
+  {500,500}//{1,3}
 };
 
 float[] starLenTable = {
-  500*SCALE,
+  1200*SCALE,
+  800*SCALE,
   300*SCALE,
-  150*SCALE,
-  20*SCALE
+  100*SCALE
 };
 
 int[][] starColorTable = { //Hmin, Hman, S, B
   {0,360,70,100},
-  {0,100,70,100},
-  {210,360,50,80},
-  {240,300,10,80},
+  {0,70,70,100},
+  {200,200,80,100},
+  {0,0,0,80},
 };
 
 float[][] starSpeedTable = {
-  {5,5},
-  {5,20},
-  {20,60},
-  {20,60}
+  {50,50},
+  {10,10},
+  {5,5},//{30,30},
+  {5,8}//{20,60}
 };
 float starSpeedSlow = 10;
 float starSpeedFast = 100;
+float superStarLen;
 
 void initStar(){
   for(int i=0;i<MAX_STAR_NUM;i++){
@@ -65,16 +66,31 @@ void updateStar(){
       starColor[i] = color( int(random(starColorTable[sRank][0],starColorTable[sRank][1])),
                             starColorTable[sRank][2],
                             starColorTable[sRank][3]);
+      if(starRanking[i]==0) {
+        starColor[i]=color(0,0,100);
+        superStarLen=starLenTable[0];
+      }
       starSpeed[i] = random(starSpeedTable[sRank][0],starSpeedTable[sRank][1]);
+
+      //print(" "+i+":"+starSpeed[i]+" ");
     }
     else if(starHead[i]==STAR_STATE_WAIT && curMillis>starWaitTime[i]){
       starHead[i]=0;
-      if(i<4)
-        bouncePath[i]=-1;
-      else if(i<7)
-        bouncePath[i]=int(random(0,16));
-      else
+      //if(i<4)
+      //  bouncePath[i]=-1;
+      //else 
+      if(starRanking[i]==0)
         bouncePath[i]=15;
+      else if(i==5)
+        bouncePath[i]=bouncePath[i-1];
+      else if(starRanking[i]>0)
+        bouncePath[i]=int(random(0,16));
+        
+      //if(i==4 && starHead[i+1]==STAR_STATE_WAIT){
+      //  starWaitTime[i+1]=curMillis+300;
+      //}
+      if(i==4)starHead[i]=STAR_STATE_IDLE;
+      
       print(" ["+i+" ");
     }
     else if(starHead[i]>=VIRTUAL_LED_TOTAL_LEN-1){
@@ -82,55 +98,118 @@ void updateStar(){
       print(" "+ i +"] ");
     }
     else if(starHead[i]>STAR_STATE_WAIT){
-      
+      for(int s=0;s<MAX_STAR_NUM;s++){
+        if(i!=s && starRanking[s]>starRanking[i] && starHead[s]==STAR_STATE_WAIT){
+          starHead[s] = STAR_STATE_IDLE;
+        }
+      }
       colorMode(RGB, 255);
-      int starLen = int(starLenTable[starRanking[i]]);
+      
+      int starLen = starRanking[i]==0?int(superStarLen):int(starLenTable[starRanking[i]]);
       for(int j=0;j<starLen;j++){
         int target = int(starHead[i])-j;
         if(target>=0 && target<STAR_LED_NUM){
-          shootingStarLED[target]=color(starColor[i],int(map(j,0,starLen,255,0)));
+          if(starRanking[i]==0){
+            colorMode(HSB, 360, 100, 100);
+            color rainbow;
+            if(j<10)
+              rainbow= color(0,0,noise(frameCount)>0.3?100:noise(frameCount)*100);
+            else{
+              boolean isWhite = noise((frameCount*50+target)*0.05)>0.7;
+              rainbow= color(360-(frameCount*10+target)%360,isWhite?0:60,isWhite?int(map(j,starLen*0.5,starLen,255,0)):int(map(j,starLen*0.5,starLen*0.8,255,0)));
+            }
+            colorMode(RGB, 255);
+            shootingStarLED[target]=rainbow;//color(rainbow,int(map(j,starLen/2,starLen,255,0)));
+          }
+          else{
+            shootingStarLED[target]=color(starColor[i],int(map(j,0,starLen,255,0)));
+          }
         }
         else{
           for(int b=0;b<RIPPLE_NUM;b++){
             
-            int bounceHeadLimit = STAR_LED_NUM+ VIRTUAL_LED_SKIP_DIST + b*(VIRTUAL_LED_SKIP_DIST+BOUNCE_LED_NUM);
+            int bounceHeadLimit = STAR_LED_NUM + b*(VIRTUAL_LED_SKIP_DIST+BOUNCE_LED_NUM)+ VIRTUAL_LED_SKIP_DIST;
             if(target >=  bounceHeadLimit && target < bounceHeadLimit + BOUNCE_LED_NUM){
               if(bouncePath[i]>=0 && b<BOUNCE_TABLE[bouncePath[i]].length){
                 int targetBounce = BOUNCE_TABLE[bouncePath[i]][b]-1;
                 boolean isLastRipple = targetBounce>=10;
-                if(isLastRipple)targetBounce-=10;
-                if(j==0 && target<=bounceHeadLimit+BOUNCE_LED_NUM/2 && target+starSpeed[i]>bounceHeadLimit+BOUNCE_LED_NUM/2 ){  //<<<<<<<<<<<<<<<trigger ripples
-                print(targetBounce+"!!");
+                if(isLastRipple){
+                  targetBounce-=10;
+                }
+                if(j==0 && target<=bounceHeadLimit+BOUNCE_LED_NUM/2 && target+starSpeed[i]>bounceHeadLimit+BOUNCE_LED_NUM/2 && starRanking[i]!=3){  //<<<<<<<<<<<<<<<trigger ripples
+                  //print(targetBounce+"!!");
                   rippleColor[targetBounce][rippleColorIndex[targetBounce]] = starColor[i];
                   rippleSinAngle[targetBounce][rippleColorIndex[targetBounce]]=0;
                   rippleSinR[targetBounce][rippleColorIndex[targetBounce]]=1;
-                  rippleColorIndex[targetBounce]=(rippleColorIndex[targetBounce]+1)%3;
+                  rippleColorIndex[targetBounce]=(rippleColorIndex[targetBounce]+1)%RIPPLE_COLOR_LAYER_NUM;
+                  if(isLastRipple){
+                    starSpeed[i] = (starLen/starLenTable[0])*10; //the shorter move slower 
+                    //println(starSpeed[i]);
+                    if(starRanking[i]==0)starSpeed[i]=0.2;
+                  }
+                }
+                if( isLastRipple && j==starLen-1 && int(starHead[i])-j>bounceHeadLimit+BOUNCE_LED_NUM/2)
+                {
+                  starHead[i]=STAR_STATE_IDLE;
+                  print(" "+ i +"] ");
                 }
                 
-                if(isLastRipple){
-                  if(target-bounceHeadLimit<BOUNCE_LED_NUM/2)
-                    bounceLED[targetBounce][target-bounceHeadLimit] = color(starColor[i],int(map(j,0,starLen,255,0)));
+                if(starRanking[i]==0){  //super star
+                  colorMode(HSB, 360, 100, 100);
+                  color rainbow;
+                  if(j<10)
+                    rainbow= color(0,0,noise(frameCount)>0.3?100:noise(frameCount)*100);
+                  else{
+                    rainbow= color(360-(frameCount*10+target)%360,60,100);
+                  }
+                  colorMode(RGB, 255);
+                  if(isLastRipple){
+                    if(target-bounceHeadLimit<BOUNCE_LED_NUM/2)
+                      bounceLED[targetBounce][target-bounceHeadLimit] = color(rainbow,int(map(j,0,starLen,255,0)));
+                  }
+                  else{
+                    bounceLED[targetBounce][target-bounceHeadLimit] = color(rainbow,int(map(j,0,starLen,255,0)));
+                  }
+                  
                 }
-                else{
-                  bounceLED[targetBounce][target-bounceHeadLimit] = color(starColor[i],int(map(j,0,starLen,255,0)));
+                else{  //normal star
+                  if(isLastRipple){
+                    if(target-bounceHeadLimit<BOUNCE_LED_NUM/2)
+                      bounceLED[targetBounce][target-bounceHeadLimit] = color(starColor[i],int(map(j,0,starLen,255,0)));
+                  }
+                  else{
+                    bounceLED[targetBounce][target-bounceHeadLimit] = color(starColor[i],int(map(j,0,starLen,255,0)));
+                  }
                 }
               }
             }
           }
         }
-      }
+      }//j
       
       
-      //move led with speed
-      if(starHead[i]<=STAR_LED_NUM + VIRTUAL_LED_SKIP_DIST && starHead[i]+starSpeed[i]>STAR_LED_NUM + VIRTUAL_LED_SKIP_DIST){
-        starHead[i]+=starSpeed[i];
-        starSpeed[i]= 5+(starSpeed[i]-5)/4;
+      if(starHead[i]>STAR_STATE_WAIT){
+        //move led with speed
+        if(starRanking[i]==0 ){  //super star
+          if(starHead[i] < STAR_LED_NUM-250){
+            if(starSpeed[i]>1.1)starSpeed[i]=starSpeed[i]*0.92;
+          }
+          else{
+            if(starSpeed[i]>1)starSpeed[i]=min(40,starSpeed[i]*1.15);
+            if(starHead[i]<STAR_LED_NUM + (RIPPLE_NUM-1)*(VIRTUAL_LED_SKIP_DIST+BOUNCE_LED_NUM))
+              superStarLen+=10;
+            else
+              superStarLen-=2;
+          }
+        }
+        if(starHead[i]<=STAR_LED_NUM + VIRTUAL_LED_SKIP_DIST && starHead[i]+starSpeed[i]>STAR_LED_NUM + VIRTUAL_LED_SKIP_DIST){
+          starHead[i]+=starSpeed[i];
+          //starSpeed[i]= 5+(starSpeed[i]-5)/4;
+        }
+        else
+          starHead[i]+=starSpeed[i];
       }
-      else
-        starHead[i]+=starSpeed[i];
-
     }
-    
   }
 }
 
@@ -141,8 +220,8 @@ void drawStar(){
   for(int i=STAR_LED_NUM-1;i>=0;i--){
       //fill(255,100,100);
       fill(shootingStarLED[i]);
-      ellipse(i*LED_DIST+50,300+i*LED_DIST*0.4,2,5);
+      if(SHOW_PATH)fill(255);
+      ellipse(i*LED_DIST*0.9+50,500-(STAR_LED_NUM-i)*LED_DIST*0.3,2,5);
       //shootingStar[i]=color(0,0,0);
   }
-  
 }
