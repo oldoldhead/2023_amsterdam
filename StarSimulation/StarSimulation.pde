@@ -12,7 +12,7 @@ color[] virtualLED = new color[VIRTUAL_LED_TOTAL_LEN];
 color[] shootingStarLED = new color[STAR_LED_NUM];
 color[][] bounceLED = new color[RIPPLE_NUM][BOUNCE_LED_NUM];
 float[] starHead = new float[MAX_STAR_NUM];
-color[] starColor = new color[MAX_STAR_NUM];
+int[] starColor = new int[MAX_STAR_NUM];
 float[] starSpeed = new float[MAX_STAR_NUM];
 int[] starWaitTime = new int[MAX_STAR_NUM]; //in millis
 int[] bouncePath = new int[MAX_STAR_NUM];
@@ -20,14 +20,14 @@ int[] bouncePath = new int[MAX_STAR_NUM];
 int curMillis;
 int[][] BOUNCE_TABLE = {
   {11},
-  {1,2,13},
-  {1,3,14},
-  {1,3,15},
-  {1,2,3,14},
+  {1,4,15},
+  {1,3,17},
+  {1,6,17},
   {1,3,14},
   {1,3,15},
   {1,4,16},
   {1,2,3,14},
+  {1,2,5,17},
   {1,3,4,15},
   {1,3,5,16},
   {1,5,6,17},

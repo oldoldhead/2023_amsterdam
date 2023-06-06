@@ -10,6 +10,7 @@ int[] STON_LEN_TABLE = {
   120
 };
 
+int SKIP_FADE_LEN = 10;
 float[] RIPPLE_X = new float[RIPPLE_NUM];
 float RIPPLE_DIST_MAX = 550*SCALE;
 float RIPPLE_DIST_DECREAMENT = 50*SCALE;
@@ -84,7 +85,15 @@ void drawStonskip(){
   for(int s=0;s<RIPPLE_NUM;s++){
     for(int i=0;i<BOUNCE_LED_NUM;i++){
       //int target = int(STAR_LED_NUM + VIRTUAL_LED_SKIP_DIST + s*(120+VIRTUAL_LED_SKIP_DIST))+i;
-      fill(bounceLED[s][i]);
+      colorMode(RGB, 255);
+      if(i<SKIP_FADE_LEN){
+        fill(color(bounceLED[s][i],int(map(i,0,SKIP_FADE_LEN,0,255))));
+      }
+      else if(BOUNCE_LED_NUM-i<SKIP_FADE_LEN){
+        fill(color(bounceLED[s][i],int(map(BOUNCE_LED_NUM-i-1,0,SKIP_FADE_LEN,0,255))));
+      }
+      else
+        fill(bounceLED[s][i]);
       if(SHOW_PATH)fill(255);
       float yShiftRatio = 1-abs(i-STON_LEN_TABLE[s]/2)/float(STON_LEN_TABLE[s]);
 
